@@ -69,7 +69,6 @@ function updateNoButton() {
         const windowWidth = window.innerWidth;
         const isMobile = windowWidth <= 768;
         
-        // 计算移动方向，每次点击改变方向
         const directions = [
             { x: 1, y: 0 },    // 右
             { x: 1, y: 1 },    // 右下
@@ -78,20 +77,16 @@ function updateNoButton() {
             { x: -1, y: 0 }    // 左
         ];
         const currentDirection = directions[clickCount - 1];
-        
-        // 基础移动距离
+
         const baseMove = isMobile ? 20 : 40;
         
-        // 计算实际移动距离
         let rightOffset = baseMove * currentDirection.x * clickCount;
         let downOffset = baseMove * currentDirection.y * clickCount;
         
-        // 缩放效果 - 调整缩放范围
         let scale = isMobile ? 
             Math.max(1 - (clickCount * 0.05), 0.85) : // 移动端最小缩放到0.85
             Math.max(1 - (clickCount * 0.05), 0.8);   // 桌面端最小缩放到0.8
-        
-        // 确保按钮不会移出容器
+
         const buttonWidth = noButton.offsetWidth * scale;
         const buttonHeight = noButton.offsetHeight * scale;
         const maxRight = windowWidth - containerRect.left - buttonWidth - 20;
@@ -108,7 +103,6 @@ function updateNoButton() {
         
         noButton.innerText = noTexts[clickCount - 1];
     } else {
-        // 第5次后的处理
         noButton.innerText = "不行:(";
         const rect = noButton.getBoundingClientRect();
         const safetyPadding = window.innerWidth <= 768 ? 30 : 20;
@@ -239,38 +233,47 @@ const successMessages = [
     "我会努力让你成为最幸福的人！🌈"
 ];
 
-yesButton.addEventListener("click", function() {
-    createFireworks();
-    
-    document.body.innerHTML = `
-        <div class="success-scene">
-            <div class="sparkle-container"></div>
-            <h1 class="yes-text heart-beat">我最最喜欢你啦！(｡♥‿♥｡)</h1>
-            <img src="images/hug.png" alt="拥抱" class="yes-image">
-            ${successMessages.map((msg, index) => 
-                `<p class="love-message" style="animation-delay: ${index * 0.3}s">
-                    ${msg}
-                </p>`
-            ).join('')}
-            <div class="heart-rain"></div>
-            <div class="copyright">
-                Original by <a href="https://github.com/37tt" target="_blank">37tt</a> | 
-                Modified by <a href="https://github.com/Thexiaoyuqaq" target="_blank">Thexiaoyu</a> with ❤️
-            </div>
-        </div>
-    `;
-
-    const sparkleContainer = document.querySelector('.sparkle-container');
-    setInterval(() => {
+function createSuccessSceneEffects() {
+    const sparklesContainer = document.createElement('div');
+    sparklesContainer.className = 'sparkles';
+    for(let i = 0; i < 50; i++) {
         const sparkle = document.createElement('div');
         sparkle.className = 'sparkle';
         sparkle.style.left = Math.random() * 100 + 'vw';
         sparkle.style.top = Math.random() * 100 + 'vh';
-        sparkleContainer.appendChild(sparkle);
-        
-        setTimeout(() => sparkle.remove(), 2000);
-    }, 200);
+        sparkle.style.animationDelay = Math.random() * 2 + 's';
+        sparklesContainer.appendChild(sparkle);
+    }
 
+    const heartsContainer = document.createElement('div');
+    heartsContainer.className = 'floating-hearts';
+    setInterval(() => {
+        const heart = document.createElement('div');
+        heart.className = 'floating-heart';
+        heart.innerHTML = '❤️';
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.fontSize = Math.random() * 15 + 15 + 'px';
+        heart.style.animationDuration = Math.random() * 2 + 3 + 's';
+        heartsContainer.appendChild(heart);
+        
+        setTimeout(() => heart.remove(), 4000);
+    }, 300);
+
+    document.querySelector('.success-scene').appendChild(sparklesContainer);
+    document.querySelector('.success-scene').appendChild(heartsContainer);
+}
+
+yesButton.addEventListener("click", function() {
+    createFireworks();
+    const scene = document.querySelector('.success-scene');
+    const container = scene.querySelector('.love-message-container');
+    
+    scene.style.display = 'flex';
+    container.innerHTML = successMessages.map((msg, index) => 
+        `<p class="love-message" style="animation-delay: ${index * 0.3}s">${msg}</p>`
+    ).join('');
+    
+    createSuccessSceneEffects();
     document.body.style.overflow = "hidden";
 });
 
