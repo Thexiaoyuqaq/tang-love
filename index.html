@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可以成为我的恋人吗？</title>
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="./src/images/heart.png" as="image">
+    <link rel="preload" href="./src/images/shocked.png" as="image">
+    <link rel="preload" href="./src/music/background.mp3" as="audio">
+    
+    <!-- 异步加载非关键CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="./src/css/style.css">
+    
+    <!-- 添加页面描述和关键字 -->
+    <meta name="description" content="一个浪漫的在线表白页面">
+    <meta name="keywords" content="表白,告白,爱情">
+</head>
+<body>
+    <audio id="bgMusic" preload="none" loop>
+        <source src="./src/music/background.mp3" type="audio/mpeg">
+    </audio>
+    
+    <div class="music-control">
+        <button id="musicToggle">
+            <i class="fas fa-volume-up"></i>
+        </button>
+        <div class="music-tip">播放背景音乐失败，请手动播放</div>
+    </div>
+
+    <div class="decorations">
+        <div class="stars"></div>
+        <div class="bubbles"></div>
+    </div>
+
+    <div class="container">
+        <div class="heart-container">
+            <img id="mainImage" src="./src/images/heart.png" alt="爱心">
+        </div>
+        <h1 id="question">可以成为我的恋人吗？</h1>
+        <div class="buttons">
+            <button id="yes">可以</button>
+            <button id="no">不要</button>
+        </div>
+    </div>
+
+    <div class="success-scene" style="display: none;">
+        <img src="./src/images/hug.png" alt="拥抱" class="yes-image">
+        <h1 class="yes-text heart-beat">我最最喜欢你啦！(｡♥‿♥｡)</h1>
+        <div class="love-message-container"></div>
+        <div class="copyright">
+            <div class="main-text">
+                Original by <a href="https://github.com/37tt" target="_blank">37tt</a> | 
+                Modified by <a href="https://github.com/Thexiaoyuqaq" target="_blank">Thexiaoyu</a> with ❤️
+            </div>
+            <span>本项目已在 GitHub 开源，欢迎 Star ⭐</span>
+        </div>
+    </div>
+
+    <script src="./src/js/script.js" defer></script>
+</body>
+</html>
