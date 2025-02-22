@@ -438,7 +438,7 @@ function createHeartEffect(container) {
 
 function cleanupMainScene() {
     noButton.removeEventListener('click', updateNoButton);
-    noButton.removeEventListener('mouseover', moveNoButton);
+    // noButton.removeEventListener('mouseover', moveNoButton);
     
     clearInterval(window.heartInterval);
     clearInterval(window.bubbleInterval);
@@ -616,12 +616,12 @@ function initializeApp() {
     initRomanticBackground();
     
     const images = [
-        'images/heart.png',
-        'images/shocked.png',
-        'images/think.png',
-        'images/angry.png',
-        'images/crying.png',
-        'images/hug.png'
+        './src/images/heart.png',
+        './src/images/shocked.png',
+        './src/images/think.png',
+        './src/images/angry.png',
+        './src/images/crying.png',
+        './src/images/hug.png'
     ];
     
     images.forEach(src => {
@@ -767,7 +767,6 @@ styleSheet.textContent = newStyles;
 document.head.appendChild(styleSheet);
 
 function initSettings() {
-    // 首先创建设置按钮
     const settingsBtn = document.createElement('div');
     settingsBtn.className = 'settings-btn';
     settingsBtn.innerHTML = '<i class="fas fa-cog"></i>';
