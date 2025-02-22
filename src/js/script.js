@@ -6,11 +6,11 @@ let mainImage = document.getElementById("mainImage");
 let clickCount = 0;
 
 const noTexts = [
-    "？你认真的吗…", 
-    "要不再想想？", 
+    "？泥…是认真的嘛？…", 
+    "要不泥再想想？", 
     "不许选这个！ ", 
     "我会很伤心…", 
-    "不行:("
+    "不可以！ :("
 ];
 
 noButton.addEventListener("click", function() {
