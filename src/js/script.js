@@ -5,6 +5,7 @@ let mainImage = document.getElementById("mainImage");
 
 let clickCount = 0;
 
+// 拒绝文本
 const noTexts = [
     "？泥…是认真的嘛？…", 
     "要不泥再想想？", 
