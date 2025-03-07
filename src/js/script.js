@@ -5,13 +5,13 @@ let mainImage = document.getElementById("mainImage");
 
 let clickCount = 0;
 
-// 拒绝文本
+// 拒绝文本 
 const noTexts = [
-    "？泥…是认真的嘛？…", 
-    "要不泥再想想？", 
-    "不许选这个！ ", 
-    "我会很伤心…", 
-    "不可以！ :("
+    "呜呜~泥是认真的嘛？🥺", 
+    "哼哼，要不要再想想嘛？💭", 
+    "不要点这个啦！求求你了~🥰", 
+    "人家会伤心的啦...😢", 
+    "不可以不可以！抱抱你~🤗"
 ];
 
 noButton.addEventListener("click", function() {
@@ -19,11 +19,6 @@ noButton.addEventListener("click", function() {
     updateNoButton();
 });
 
-noButton.addEventListener("mouseover", function() {
-    if (clickCount >= 5) { 
-        moveNoButton();
-    }
-});
 
 function throttle(func, limit) {
     let inThrottle;
@@ -34,33 +29,6 @@ function throttle(func, limit) {
             setTimeout(() => inThrottle = false, limit);
         }
     }
-}
-
-function moveNoButton() {
-    const buttonRect = noButton.getBoundingClientRect();
-    const mouseX = event.clientX;
-    const mouseY = event.clientY;
-
-    const distanceX = mouseX - (buttonRect.left + buttonRect.width/2);
-    const distanceY = mouseY - (buttonRect.top + buttonRect.height/2);
-
-    const safetyPadding = 20;
-    const maxX = window.innerWidth - buttonRect.width - safetyPadding;
-    const maxY = window.innerHeight - buttonRect.height - safetyPadding;
-    const minX = safetyPadding;
-    const minY = safetyPadding;
-
-    let newX = buttonRect.left - distanceX;
-    let newY = buttonRect.top - distanceY;
-
-    newX = Math.min(Math.max(minX, newX), maxX);
-    newY = Math.min(Math.max(minY, newY), maxY);
- 
-    noButton.style.position = 'fixed';
-    noButton.style.transform = 'none';
-    noButton.style.left = `${newX}px`;
-    noButton.style.top = `${newY}px`;
-    noButton.style.transition = 'all 0.2s ease-out';
 }
 
 document.addEventListener('wheel', function(e) {
@@ -103,8 +71,7 @@ function updateNoButton() {
         noButton.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
         noButton.style.transform = `translate(${moveX}px, ${moveY}px) scale(${1 - clickCount * 0.05})`;
         
-        const emojis = ["😏", "😅", "😳", "🥺", "😘"];
-        noButton.innerHTML = `${noTexts[clickCount - 1]} ${emojis[clickCount - 1]}`;
+        noButton.innerHTML = `${noTexts[clickCount - 1]}`;
         
         createHeartBreak(noButton.getBoundingClientRect());
     } else {
@@ -303,14 +270,15 @@ function initialHearts() {
 }
 
 const successMessages = [
-    "从今以后，我们就是一对啦！💑",
-    "永远爱你！❤️",
-    "以后的日子请多多指教！😊",
-    "我会一直陪在你身边！🌹",
-    "你是我最特别的人！✨",
-    "愿我们的爱情永远甜蜜！🍬",
-    "我会努力让你成为最幸福的人！🌈"
+    "小可爱，从今以后我们就是一对啦！🥰💑",
+    "宝贝，我会永远永远爱你哦！🌸❤️",
+    "亲爱的，以后的每一天都要和你一起度过呢！🎀😊",
+    "么么哒，我会一直陪在你身边的！抱抱～🤗🌹",
+    "我的小宝贝，你是我最最特别的人！✨💝",
+    "亲亲，愿我们的爱情永远甜甜蜜蜜！🍭🍬",
+    "宝宝，我会用尽全力让你成为世界上最幸福的人！🌈💖"
 ];
+
 
 yesButton.addEventListener("click", function() {
     yesButton.style.animation = "none";
@@ -439,7 +407,6 @@ function createHeartEffect(container) {
 
 function cleanupMainScene() {
     noButton.removeEventListener('click', updateNoButton);
-    // noButton.removeEventListener('mouseover', moveNoButton);
     
     clearInterval(window.heartInterval);
     clearInterval(window.bubbleInterval);
