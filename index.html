@@ -3,64 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>可以成为我的恋人吗？</title>
+    <title>你愿意成为我的恋人吗?</title>
     
-    <!-- 预加载关键资源 -->
-    <link rel="preload" href="./src/images/heart.png" as="image">
-    <link rel="preload" href="./src/images/shocked.png" as="image">
-    <link rel="preload" href="./src/music/background.mp3" as="audio">
+    <link rel="preload" href="./src/music/background2.mp3" as="audio">
     
-    <!-- 异步加载非关键CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" media="print" onload="this.media='all'">
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&family=Long+Cang&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="./src/css/style.css">
+    <link rel="stylesheet" href="./src/css/animations.css">
     
-    <!-- 添加页面描述和关键字 -->
-    <meta name="description" content="一个浪漫的在线表白页面">
-    <meta name="keywords" content="表白,告白,爱情">
+    <meta name="description" content="一个浪漫有趣的在线表白页面,充满爱意和惊喜">
+    <meta name="keywords" content="表白,告白,爱情,浪漫,恋爱">
+    <meta property="og:title" content="你愿意成为我的恋人吗?">
+    <meta property="og:description" content="一个浪漫有趣的在线表白页面">
 </head>
 <body>
-    <audio id="bgMusic" preload="none" loop>
-        <source src="./src/music/background.mp3" type="audio/mpeg">
+    <audio id="bgMusic" autoplay preload="auto" loop>
+        <source src="./src/music/background2.mp3" type="audio/mpeg">
     </audio>
     
     <div class="music-control">
-        <button id="musicToggle">
-            <i class="fas fa-volume-up"></i>
+        <button id="musicToggle" aria-label="音乐控制">
+            <span class="music-icon">
+                <i class="fas fa-music"></i>
+            </span>
+            <span class="music-waves">
+                <span></span><span></span><span></span>
+            </span>
         </button>
-        <div class="music-tip">播放背景音乐失败，请手动播放</div>
+        <div class="music-tip">点击播放音乐</div>
     </div>
 
-    <div class="decorations">
-        <div class="stars"></div>
-        <div class="bubbles"></div>
+    <div class="settings-control">
+        <button id="settingsToggle" aria-label="设置">
+            <i class="fas fa-cog"></i>
+        </button>
     </div>
 
-    <div class="container">
-        <div class="heart-container">
-            <img id="mainImage" src="./src/images/heart.png" alt="爱心">
-        </div>
-        <h1 id="question">可以成为我的恋人吗？</h1>
-        <div class="buttons">
-            <button id="yes">可以</button>
-            <button id="no">不要</button>
-        </div>
+    <div class="background-layer">
+        <div class="gradient-bg"></div>
+        <div class="particle-field"></div>
+        <div class="floating-shapes"></div>
+        <canvas id="heartCanvas"></canvas>
     </div>
 
-    <div class="success-scene" style="display: none;">
-        <img src="./src/images/hug.png" alt="拥抱" class="yes-image">
-        <h1 class="yes-text heart-beat">我最最喜欢你啦！(｡♥‿♥｡)</h1>
-        <div class="love-message-container"></div>
-        <div class="copyright">
-            <div class="main-text">
-                Original by <a href="https://github.com/37tt" target="_blank">37tt</a> | 
-                Modified by <a href="https://github.com/Thexiaoyuqaq" target="_blank">Thexiaoyu</a> with ❤️
+    <div class="main-container" id="mainContainer">
+        <div class="character-container">
+            <div class="character" id="character">
+                <div class="music-visualizer" id="musicVisualizer">
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                    <div class="visualizer-bar"></div>
+                </div>
+                <div class="character-face">
+                    <img src="./src/images/heart.png" alt="角色表情" id="characterImage">
+                </div>
             </div>
-            <span>本项目已在 GitHub 开源，欢迎 Star ⭐</span>
+        </div>
+
+        <h1 class="main-question" id="mainQuestion">
+            <span class="question-text">你愿意成为我的恋人吗?</span>
+            <span class="question-decoration">❤</span>
+        </h1>
+
+        <div class="buttons-group">
+            <button class="btn-yes" id="btnYes">
+                <span class="btn-content">
+                    <i class="fas fa-heart"></i>
+                    <span>愿意</span>
+                </span>
+                <span class="btn-sparkle"></span>
+            </button>
+            <button class="btn-no" id="btnNo">
+                <span class="btn-content">
+                    <span>不要</span>
+                </span>
+            </button>
+        </div>
+
+        <div class="hint-text" id="hintText">
+            <p>💭 仔细想想哦...</p>
         </div>
     </div>
 
-    <script src="./src/js/script.js" defer></script>
+    <div class="success-scene" id="successScene">
+        <div class="success-bg">
+            <div class="success-gradient"></div>
+            <div class="success-particles"></div>
+        </div>
+        
+        <div class="success-content">
+            <!-- <div class="success-emoji">🥰</div> -->
+            <h1 class="success-title">耶!我们在一起啦!</h1>
+            
+            <div class="love-messages" id="loveMessages"></div>
+            
+            <div class="success-actions">
+                <button class="btn-celebrate" id="btnCelebrate">
+                    <i class="fas fa-champagne-glasses"></i>
+                    再来一次庆祝
+                </button>
+            </div>
+
+            <div class="couple-animation">
+                <div class="couple-text">永远在一起</div>
+            </div>
+            <div class="copyright">
+                <div class="copyright-content">
+                    <div class="main-text">
+                        Original by <a href="https://github.com/37tt" target="_blank">37tt</a> | 
+                        Modified by <a href="https://github.com/Thexiaoyuqaq" target="_blank">Thexiaoyu</a>
+                    </div>
+                    <div class="expand-btn">查看更多</div>
+                    <div class="star-text">
+                        本项目已在 GitHub 开源，欢迎 Star ⭐<br>
+                        <span class="extra-text">小雨在这里！祝贺每一对情侣长生九九！！！</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h3>定制你的表白</h3>
+            <button class="settings-close" id="settingsClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="settings-body">
+            <div class="setting-item">
+                <label>
+                    <i class="fas fa-user-heart"></i>
+                    表白对象
+                </label>
+                <input type="text" id="recipientName" placeholder="输入TA的名字" maxlength="10">
+            </div>
+            
+            <div class="setting-item">
+                <label>
+                    <i class="fas fa-music"></i>
+                    背景音乐
+                </label>
+                <input type="text" id="musicId" placeholder="输入网易云音乐ID">
+                <small class="help-text">
+                    <a href="./setmusic.html" target="_blank">如何获取音乐ID?</a>
+                </small>
+            </div>
+            
+            <div class="setting-item">
+                <label>
+                    <i class="fas fa-palette"></i>
+                    主题颜色
+                </label>
+                <div class="color-options">
+                    <button class="color-option active" data-theme="pink" style="background: linear-gradient(135deg, #ff6b8b, #ffa5a5)"></button>
+                    <button class="color-option" data-theme="blue" style="background: linear-gradient(135deg, #667eea, #764ba2)"></button>
+                    <button class="color-option" data-theme="green" style="background: linear-gradient(135deg, #56ab2f, #a8e063)"></button>
+                    <button class="color-option" data-theme="sunset" style="background: linear-gradient(135deg, #f093fb, #f5576c)"></button>
+                </div>
+            </div>
+            
+            <div class="setting-actions">
+                <button class="btn-generate" id="btnGenerate">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    生成专属链接
+                </button>
+            </div>
+            
+            <div class="link-result" id="linkResult">
+                <label>你的专属链接:</label>
+                <div class="link-box">
+                    <input type="text" id="generatedLink" readonly>
+                    <button class="btn-copy" id="btnCopy">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="floating-decorations">
+        <div class="decoration-item star">⭐</div>
+        <div class="decoration-item heart">💕</div>
+        <div class="decoration-item sparkle">✨</div>
+        <div class="decoration-item cloud">☁️</div>
+    </div>
+
+    <div class="footer-info">
+        <p>Made with <span class="heart-beat">❤️</span> for you</p>
+    </div>
+
+    <script src="./src/js/script.js"></script>
     <script defer src="https://stats.xyqaq.cn/script.js" data-website-id="8c9d20fc-2eed-421d-9c0e-2293961250a7"></script>
 </body>
 </html>

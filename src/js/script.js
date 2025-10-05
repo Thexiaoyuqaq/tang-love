@@ -1,667 +1,142 @@
-let yesButton = document.getElementById("yes");
-let noButton = document.getElementById("no");
-let questionText = document.getElementById("question");
-let mainImage = document.getElementById("mainImage");
 
 let clickCount = 0;
+let isPlaying = false;
+let currentTheme = 'pink';
+let particles = [];
+let audioContext = null;
+let analyser = null;
+let dataArray = null;
+let animationId = null;
+let audioSource = null;
 
-// 拒绝文本 
-const noTexts = [
-    "呜呜~泥是认真的嘛？🥺", 
-    "哼哼，要不要再想想嘛？💭", 
-    "不要点这个啦！求求你了~🥰", 
-    "人家会伤心的啦...😢", 
-    "不可以不可以！抱抱你~🤗"
-];
+const elements = {
+    mainContainer: document.getElementById('mainContainer'),
+    character: document.getElementById('character'),
+    characterImage: document.getElementById('characterImage'),
+    mainQuestion: document.getElementById('mainQuestion'),
+    btnYes: document.getElementById('btnYes'),
+    btnNo: document.getElementById('btnNo'),
+    hintText: document.getElementById('hintText'),
+    successScene: document.getElementById('successScene'),
+    loveMessages: document.getElementById('loveMessages'),
+    bgMusic: document.getElementById('bgMusic'),
+    musicToggle: document.getElementById('musicToggle'),
+    settingsToggle: document.getElementById('settingsToggle'),
+    settingsPanel: document.getElementById('settingsPanel'),
+    settingsClose: document.getElementById('settingsClose'),
+    recipientName: document.getElementById('recipientName'),
+    musicId: document.getElementById('musicId'),
+    btnGenerate: document.getElementById('btnGenerate'),
+    linkResult: document.getElementById('linkResult'),
+    generatedLink: document.getElementById('generatedLink'),
+    btnCopy: document.getElementById('btnCopy'),
+    btnCelebrate: document.getElementById('btnCelebrate')
+};
 
-noButton.addEventListener("click", function() {
-    clickCount++;
-    updateNoButton();
-});
-
-
-function throttle(func, limit) {
-    let inThrottle;
-    return function(...args) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
-        }
+const config = {
+    messages: {
+        refuse: [
+            "真的不再考虑一下吗?😢",
+            "给我一次机会好不好?🥺",
+            "我会对你很好很好的!💝",
+            "别拒绝我嘛~ 🌹",
+            "你再想想呢?✨",
+            "我真的真的很喜欢你!💕"
+        ],
+        hints: [
+            "💭 仔细想想哦...",
+            "💭 其实我人很好的...",
+            "💭 我们会很幸福的...",
+            "💭 试试看嘛...",
+            "💭 给爱一个机会...",
+            "💭 跟着心走..."
+        ],
+        success: [
+            "从今以后,你就是我最珍贵的宝贝!",
+            "我会用一生来爱你,守护你!",
+            "谢谢你愿意走进我的生命!",
+            "让我们一起创造美好的回忆吧!",
+            "你的笑容是我最大的幸福!",
+            "我爱你,现在是,以后也是!",
+            "余生请多指教,我的爱人!"
+        ]
+    },
+    characterImages: {
+        happy: './src/images/heart.png',
+        shocked: './src/images/shocked.png',
+        think: './src/images/think.png',
+        crying: './src/images/crying.png',
+        angry: './src/images/angry.png',
+        love: './src/images/heart.png'
     }
-}
-
-document.addEventListener('wheel', function(e) {
-    e.preventDefault();
-}, { passive: false });
-
-document.addEventListener('touchmove', function(e) {
-    e.preventDefault();
-}, { passive: false });
-
-function updateNoButton() {
-    let yesSize = Math.min(1 + (clickCount * 0.15), 1.8);
-    yesButton.style.transform = `scale(${yesSize})`;
-    yesButton.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    
-    if (clickCount > 0) {
-        yesButton.style.animation = "shake 0.82s cubic-bezier(.36,.07,.19,.97) infinite";
-    }
-
-    if (clickCount < 5) {
-        const buttonsContainer = document.querySelector('.buttons');
-        const containerRect = buttonsContainer.getBoundingClientRect();
-        const windowWidth = window.innerWidth;
-        const isMobile = windowWidth <= 768;
-        
-        const movements = [
-            { x: 1, y: -0.5 },
-            { x: -1, y: -0.5 },
-            { x: 1, y: 0.5 },
-            { x: -1, y: 0.5 },
-            { x: 0, y: -1 }
-        ];
-        
-        const currentMovement = movements[clickCount - 1];
-        const baseMove = isMobile ? 30 : 50;
-        
-        let moveX = baseMove * currentMovement.x * clickCount;
-        let moveY = baseMove * currentMovement.y * clickCount;
-        
-        noButton.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        noButton.style.transform = `translate(${moveX}px, ${moveY}px) scale(${1 - clickCount * 0.05})`;
-        
-        noButton.innerHTML = `${noTexts[clickCount - 1]}`;
-        
-        createHeartBreak(noButton.getBoundingClientRect());
-    } else {
-        noButton.style.transition = 'all 0.2s ease-out';
-        moveNoButtonAway();
-    }
-
-    updateMainImage();
-}
-
-function createHeartBreak(buttonRect) {
-    const heart = document.createElement('div');
-    heart.innerHTML = '💔';
-    heart.style.position = 'fixed';
-    heart.style.fontSize = '24px';
-    heart.style.left = `${buttonRect.left + buttonRect.width/2}px`;
-    heart.style.top = `${buttonRect.top + buttonRect.height/2}px`;
-    heart.style.transform = 'translate(-50%, -50%)';
-    heart.style.animation = 'heartBreak 1s forwards';
-    heart.style.pointerEvents = 'none';
-    heart.style.zIndex = '1000';
-    document.body.appendChild(heart);
-
-    setTimeout(() => heart.remove(), 1000);
-}
-
-function updateMainImage() {
-    const images = {
-        0: "./src/images/heart.png",
-        1: "./src/images/shocked.png",
-        2: "./src/images/think.png",
-        3: "./src/images/angry.png",
-        4: "./src/images/crying.png"
-    };
-
-    if (images[clickCount]) {
-        mainImage.style.animation = "bounce 0.5s ease";
-        setTimeout(() => {
-            mainImage.src = images[clickCount];
-            mainImage.style.animation = "";
-        }, 250);
-    }
-
-    let moveUp = Math.min(clickCount * 20, 80);
-    mainImage.style.transform = `translateY(-${moveUp}px)`;
-    questionText.style.transform = `translateY(-${moveUp}px)`;
-}
-
-function moveNoButtonAway() {
-    const maxDistance = 100;
-    const angle = Math.random() * Math.PI * 2;
-    const distance = Math.random() * maxDistance + 50;
-    
-    const moveX = Math.cos(angle) * distance;
-    const moveY = Math.sin(angle) * distance;
-    
-    noButton.style.transform = `translate(${moveX}px, ${moveY}px) scale(0.8)`;
-}
-
-const bgMusic = document.getElementById('bgMusic');
-const musicToggle = document.getElementById('musicToggle');
-let isMusicPlaying = false;
-
-function initMusicControl() {
-    const bgMusic = document.getElementById('bgMusic');
-    const musicToggle = document.getElementById('musicToggle');
-    const musicIcon = musicToggle.querySelector('i');
-    const musicTip = document.querySelector('.music-tip');
-    
-    const playMusic = () => {
-        return bgMusic.play().then(() => {
-            musicIcon.className = 'fas fa-volume-up';
-            musicToggle.classList.add('playing');
-        }).catch(error => {
-            console.log('Auto-play failed:', error);
-            musicIcon.className = 'fas fa-volume-mute';
-            musicToggle.classList.remove('playing');
-            showMusicTip();
-        });
-    };
-
-    const showMusicTip = () => {
-        const musicTip = document.querySelector('.music-tip');
-        
-        // 添加小尾巴元素
-        if (!musicTip.querySelector('.tip-tail')) {
-            const tail = document.createElement('div');
-            tail.className = 'tip-tail';
-            musicTip.appendChild(tail);
-        }
-        
-        requestAnimationFrame(() => {
-            musicTip.classList.add('show');
-            
-            setTimeout(() => {
-                requestAnimationFrame(() => {
-                    musicTip.classList.add('hide');
-                    setTimeout(() => {
-                        musicTip.classList.remove('show', 'hide');
-                    }, 400);
-                });
-            }, 3000);
-        });
-    };
-
-    const toggleMusic = () => {
-        if (bgMusic.paused) {
-            playMusic();
-        } else {
-            bgMusic.pause();
-            musicIcon.className = 'fas fa-volume-mute';
-            musicToggle.classList.remove('playing');
-        }
-    };
-
-    musicToggle.addEventListener('click', toggleMusic);
-
-    const notesDiv = document.createElement('div');
-    notesDiv.className = 'music-notes';
-    musicToggle.appendChild(notesDiv);
-
-    playMusic();
-}
-
-function createStars() {
-    const stars = document.querySelector('.stars');
-    for (let i = 0; i < 50; i++) {
-        const star = document.createElement('div');
-        star.className = 'star';
-        star.style.left = Math.random() * 100 + 'vw';
-        star.style.top = Math.random() * 100 + 'vh';
-        star.style.width = Math.random() * 3 + 'px';
-        star.style.height = star.style.width;
-        star.style.animationDelay = Math.random() * 1 + 's';
-        stars.appendChild(star);
-    }
-}
-
-function createBubbles() {
-    const bubbles = document.querySelector('.bubbles');
-    const fragment = document.createDocumentFragment();
-    
-    const createSingleBubble = () => {
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble';
-        bubble.style.left = Math.random() * 100 + 'vw';
-        bubble.style.width = Math.random() * 30 + 20 + 'px';
-        bubble.style.height = bubble.style.width;
-        fragment.appendChild(bubble);
-        
-        requestAnimationFrame(() => {
-            bubbles.appendChild(fragment);
-            setTimeout(() => {
-                if (bubble.parentNode) {
-                    bubble.remove();
-                }
-            }, 4000);
-        });
-    };
-    
-    setInterval(createSingleBubble, 500);
-}
-
-function createFloatingHearts() {
-    const fragment = document.createDocumentFragment();
-    const heart = document.createElement('div');
-    heart.className = 'heart-float';
-    heart.innerHTML = '❤️';
-    
-    heart.style.left = Math.random() * 100 + 'vw';
-    heart.style.fontSize = (Math.random() * 25 + 15) + 'px';
-    
-    const duration = Math.random() * 3 + 8;
-    heart.style.animationDuration = `${duration}s`;
-    
-    fragment.appendChild(heart);
-    document.body.appendChild(fragment);
-    
-    requestAnimationFrame(() => {
-        setTimeout(() => {
-            if (heart.parentNode) {
-                heart.remove();
-            }
-        }, duration * 1000);
-    });
-}
-
-setInterval(createFloatingHearts, 500);
-
-function initialHearts() {
-    for(let i = 0; i < 15; i++) { 
-        setTimeout(() => {
-            createFloatingHearts();
-        }, i * 200);
-    }
-}
-
-const successMessages = [
-    "小可爱，从今以后我们就是一对啦！🥰💑",
-    "宝贝，我会永远永远爱你哦！🌸❤️",
-    "亲爱的，以后的每一天都要和你一起度过呢！🎀😊",
-    "么么哒，我会一直陪在你身边的！抱抱～🤗🌹",
-    "我的小宝贝，你是我最最特别的人！✨💝",
-    "亲亲，愿我们的爱情永远甜甜蜜蜜！🍭🍬",
-    "宝宝，我会用尽全力让你成为世界上最幸福的人！🌈💖"
-];
-
-
-yesButton.addEventListener("click", function() {
-    yesButton.style.animation = "none";
-    yesButton.style.transform = 'scale(2.2)';
-    yesButton.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    
-    setTimeout(() => {
-        createFireworks();
-        showSuccessScene();
-    }, 300);
-});
-
-function showSuccessScene() {
-    const scene = document.querySelector('.success-scene');
-    const container = scene.querySelector('.love-message-container');
-    
-    cleanupMainScene();
-    container.innerHTML = '';
-    scene.style.display = 'flex';
-    
-    requestAnimationFrame(() => {
-        scene.classList.add('active');
-        
-        const heartEffectContainer = document.createElement('div');
-        heartEffectContainer.className = 'heart-effect-container';
-        scene.insertBefore(heartEffectContainer, scene.firstChild);
-        
-        createHeartEffect(heartEffectContainer);
-        
-        const fragment = document.createDocumentFragment();
-        successMessages.forEach((msg, index) => {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'love-message';
-            messageDiv.textContent = msg;
-            messageDiv.style.animationDelay = `${index * 300}ms`;
-            fragment.appendChild(messageDiv);
-        });
-        container.appendChild(fragment);
-        
-        requestAnimationFrame(() => {
-            container.querySelectorAll('.love-message').forEach(msg => {
-                msg.classList.add('animate');
-            });
-        });
-        
-        createSuccessSceneEffects();
-    });
-}
-
-function createHeartEffect(container) {
-    const colors = [
-        '#ff6b8b', '#ff8da1', '#ffb6c1', '#ff69b4', '#ff1493'
-    ];
-    
-    let activeHearts = 0;
-    const maxHearts = window.innerWidth <= 768 ? 15 : 30;
-    
-    function createHeart() {
-        if (!document.querySelector('.success-scene.active') || activeHearts >= maxHearts) return;
-        
-        const heart = document.createElement('div');
-        heart.className = 'floating-effect-heart';
-
-        const size = Math.random() * 15 + 8;
-        heart.style.width = `${size}px`;
-        heart.style.height = `${size}px`;
-        
-        const startX = Math.random() * 90 + 5;
-        heart.style.left = `${startX}%`;
-        heart.style.bottom = '0';
-        
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        heart.style.backgroundColor = color;
-        
-        const duration = Math.random() * 2 + 3;
-        const floatDistance = -40 - Math.random() * 40;
-        const swayDistance = -20 + Math.random() * 40;
-        
-        heart.style.animation = `
-            floatUp ${duration}s ease-out forwards,
-            sway ${duration * 1.2}s ease-in-out infinite
-        `;
-        
-        heart.style.setProperty('--float-distance', `${floatDistance}vh`);
-        heart.style.setProperty('--sway-distance', `${swayDistance}px`);
-        
-        container.appendChild(heart);
-        activeHearts++;
-        
-        setTimeout(() => {
-            heart.remove();
-            activeHearts--;
-        }, duration * 1000);
-    }
-    
-    let lastTime = 0;
-    const interval = 300;
-    
-    function animate(currentTime) {
-        if (!lastTime) lastTime = currentTime;
-        
-        if (currentTime - lastTime > interval) {
-            createHeart();
-            lastTime = currentTime;
-        }
-        
-        if (document.querySelector('.success-scene.active')) {
-            requestAnimationFrame(animate);
-        }
-    }
-    
-    requestAnimationFrame(animate);
-    
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            lastTime = 0;
-            requestAnimationFrame(animate);
-        }
-    });
-    
-    return () => {
-        container.innerHTML = '';
-        activeHearts = 0;
-    };
-}
-
-function cleanupMainScene() {
-    noButton.removeEventListener('click', updateNoButton);
-    
-    clearInterval(window.heartInterval);
-    clearInterval(window.bubbleInterval);
-    
-    const elementsToRemove = [
-        '.decorations',
-        '.floating-hearts',
-        '.sparkles',
-        '.bubbles'
-    ];
-    
-    elementsToRemove.forEach(selector => {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(el => el.remove());
-    });
-    
-    const mainElements = document.querySelectorAll('.container, #mainImage, .buttons');
-    mainElements.forEach(el => {
-        el.style.display = 'none';
-    });
-
-    window.noButton = null;
-    window.yesButton = null;
-    window.mainImage = null;
-}
-
-function createSuccessSceneEffects() {
-    const scene = document.querySelector('.success-scene');
-    const isMobile = window.innerWidth <= 768;
-    
-    const fragment = document.createDocumentFragment();
-    
-    const heartRain = document.createElement('div');
-    heartRain.className = 'heart-rain';
-    fragment.appendChild(heartRain);
-    
-    const loveBubbles = document.createElement('div');
-    loveBubbles.className = 'love-bubbles';
-    fragment.appendChild(loveBubbles);
-    
-    const successStars = document.createElement('div');
-    successStars.className = 'success-stars';
-    fragment.appendChild(successStars);
-    
-    scene.appendChild(fragment);
-
-    const rainInterval = isMobile ? 800 : 300;
-    const bubbleInterval = isMobile ? 1200 : 500;
-    const starInterval = isMobile ? 600 : 200;
-    
-    let elementCount = 0;
-    const maxElements = isMobile ? 30 : 60;
-
-    function createRainHeart() {
-        if (elementCount >= maxElements) return;
-        
-        const heart = document.createElement('div');
-        heart.className = 'rain-heart';
-        heart.innerHTML = '❤';
-        heart.style.left = `${Math.random() * 100}%`;
-        heart.style.fontSize = `${Math.random() * 8 + 6}px`;
-        heart.style.setProperty('--duration', `${Math.random() * 1 + 2}s`);
-        heartRain.appendChild(heart);
-        
-        elementCount++;
-        setTimeout(() => {
-            heart.remove();
-            elementCount--;
-        }, 3000);
-    }
-
-    function createBubble() {
-        if (elementCount >= maxElements) return;
-        
-        const bubble = document.createElement('div');
-        bubble.className = 'love-bubble';
-        bubble.style.left = `${Math.random() * 100}%`;
-        bubble.style.top = `${Math.random() * 100}%`;
-        bubble.style.width = `${Math.random() * 15 + 10}px`;
-        bubble.style.height = bubble.style.width;
-        loveBubbles.appendChild(bubble);
-        
-        elementCount++;
-        setTimeout(() => {
-            bubble.remove();
-            elementCount--;
-        }, 4000);
-    }
-
-    function createStar() {
-        if (elementCount >= maxElements) return;
-        
-        const star = document.createElement('div');
-        star.className = 'success-star';
-        star.style.left = `${Math.random() * 100}%`;
-        star.style.top = `${Math.random() * 100}%`;
-        successStars.appendChild(star);
-        
-        elementCount++;
-        setTimeout(() => {
-            star.remove();
-            elementCount--;
-        }, 2000);
-    }
-
-    let lastRainTime = 0;
-    let lastBubbleTime = 0;
-    let lastStarTime = 0;
-
-    function animate(timestamp) {
-        if (timestamp - lastRainTime > rainInterval) {
-            createRainHeart();
-            lastRainTime = timestamp;
-        }
-        if (timestamp - lastBubbleTime > bubbleInterval) {
-            createBubble();
-            lastBubbleTime = timestamp;
-        }
-        if (timestamp - lastStarTime > starInterval) {
-            createStar();
-            lastStarTime = timestamp;
-        }
-        
-        if (!document.hidden) {
-            requestAnimationFrame(animate);
-        }
-    }
-
-    requestAnimationFrame(animate);
-
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            requestAnimationFrame(animate);
-        }
-    });
-
-    return () => {
-        heartRain.remove();
-        loveBubbles.remove();
-        successStars.remove();
-    };
-}
-
-function createFireworks() {
-    const colors = ['#ff69b4', '#ff1493', '#ff69b4', '#ff8da1', '#ffa5a5'];
-    
-    for(let i = 0; i < 20; i++) {
-        setTimeout(() => {
-            const firework = document.createElement('div');
-            firework.className = 'firework';
-            firework.style.left = Math.random() * 100 + 'vw';
-            firework.style.top = Math.random() * 100 + 'vh';
-            firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            document.body.appendChild(firework);
-            
-            setTimeout(() => {
-                firework.remove();
-            }, 1000);
-        }, i * 100);
-    }
-}
-
-window.addEventListener('load', () => {
-    document.body.classList.add('loaded');
-    initializeApp();
-});
-
-function initializeApp() {
-    createStars();
-    createBubbles();
-    initMusicControl();
-    initialHearts();
-    initCopyright();
-    initSettings();
-    initRomanticBackground();
-    
-    const images = [
-        './src/images/heart.png',
-        './src/images/shocked.png',
-        './src/images/think.png',
-        './src/images/angry.png',
-        './src/images/crying.png',
-        './src/images/hug.png'
-    ];
-    
-    images.forEach(src => {
-        const img = new Image();
-        img.src = src;
-    });
-}
-
-const animationObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            requestAnimationFrame(() => {
-                entry.target.classList.add('animate');
-            });
-        }
-    });
-}, { 
-    threshold: 0.1,
-    rootMargin: '20px'
-});
+};
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.love-message').forEach(msg => {
-        animationObserver.observe(msg);
-    });
+    init();
 });
 
-function initCopyright() {
-    const copyright = document.querySelector('.copyright');
+function init() {
+    checkUrlParams();
     
-    copyright.innerHTML = `
-        <div class="copyright-content">
-            <div class="main-text">
-                Original by <a href="https://github.com/37tt" target="_blank">37tt</a> | 
-                Modified by <a href="https://github.com/Thexiaoyuqaq" target="_blank">Thexiaoyu</a>
-            </div>
-            <div class="expand-btn">查看更多</div>
-            <div class="star-text">
-                本项目已在 GitHub 开源，欢迎 Star ⭐<br>
-                <span class="extra-text">小雨在这里！祝贺每一对情侣长生九九！！！</span>
-            </div>
-        </div>
-    `;
+    initCanvas();
+    
+    initEventListeners();
+    
+    initAnimations();
+    
+    initTheme();
 
-    const expandBtn = copyright.querySelector('.expand-btn');
+    initCopyright()
+    
+    setTimeout(() => {
+        showMusicTip();
+    }, 2000);
+    
+    createRandomDecorations();
+}
+
+function initCopyright() {
+    const copyrightElement = document.querySelector('.copyright');
+    
+    if (!copyrightElement) {
+        console.log('版权元素未找到');
+        return;
+    }
+    
+    const expandBtn = copyrightElement.querySelector('.expand-btn');
+    
+    if (!expandBtn) {
+        console.log('展开按钮未找到');
+        return;
+    }
+    
     let isExpanded = false;
     let timeout;
 
     expandBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         isExpanded = !isExpanded;
-        copyright.classList.toggle('expanded', isExpanded);
+        copyrightElement.classList.toggle('expanded', isExpanded);
         expandBtn.textContent = isExpanded ? '收起' : '查看更多';
         
         clearTimeout(timeout);
         if (isExpanded) {
             timeout = setTimeout(() => {
-                copyright.classList.remove('expanded');
+                copyrightElement.classList.remove('expanded');
                 expandBtn.textContent = '查看更多';
                 isExpanded = false;
             }, 5000);
         }
     });
 
-    copyright.addEventListener('mouseenter', () => {
+    copyrightElement.addEventListener('mouseenter', () => {
         clearTimeout(timeout);
     });
 
-    copyright.addEventListener('mouseleave', () => {
+    copyrightElement.addEventListener('mouseleave', () => {
         if (isExpanded) {
             timeout = setTimeout(() => {
-                copyright.classList.remove('expanded');
+                copyrightElement.classList.remove('expanded');
                 expandBtn.textContent = '查看更多';
                 isExpanded = false;
             }, 2000);
@@ -669,239 +144,926 @@ function initCopyright() {
     });
 }
 
-const newStyles = `
-@keyframes heartBreak {
-    0% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
+function checkUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    
+    const recipient = params.get('to');
+    if (recipient) {
+        const name = decodeURIComponent(recipient);
+        elements.recipientName.value = name;
+        updateQuestionText(name);
     }
-    50% {
-        opacity: 0.8;
-        transform: translate(-50%, -50%) scale(1.2) rotate(15deg);
+    
+    const musicId = params.get('music');
+    if (musicId) {
+        elements.musicId.value = musicId;
+        updateMusicSource(musicId);
     }
-    100% {
-        opacity: 0;
-        transform: translate(-50%, -100%) scale(0.5) rotate(-15deg);
-    }
-}
-
-@keyframes bounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
-
-@keyframes shake {
-    0%, 100% { 
-        transform: scale(${Math.min(1 + (clickCount * 0.15), 1.8)}) rotate(0deg); 
-    }
-    10% { 
-        transform: scale(${Math.min(1 + (clickCount * 0.15), 1.8)}) translate(-1px, -1px) rotate(-2deg); 
-    }
-    20% { 
-        transform: scale(${Math.min(1 + (clickCount * 0.15), 1.8)}) translate(-2px, 1px) rotate(2deg); 
-    }
-    30% { 
-        transform: scale(${Math.min(1 + (clickCount * 0.15), 1.8)}) translate(2px, 1px) rotate(-2deg); 
-    }
-    40% { 
-        transform: scale(${Math.min(1 + (clickCount * 0.15), 1.8)}) translate(1px, -1px) rotate(2deg); 
-    }
-    50% { 
-        transform: scale(${Math.min(1 + (clickCount * 0.15), 1.8)}) translate(-1px, 1px) rotate(-1deg); 
-    }
-    60% { 
-        transform: scale(${Math.min(1 + (clickCount * 0.15), 1.8)}) translate(-2px, -1px) rotate(1deg); 
-    }
-    70% { 
-        transform: scale(${Math.min(1 + (clickCount * 0.15), 1.8)}) translate(2px, 1px) rotate(-1deg); 
-    }
-    80% { 
-        transform: scale(${Math.min(1 + (clickCount * 0.15), 1.8)}) translate(-1px, -1px) rotate(1deg); 
-    }
-    90% { 
-        transform: scale(${Math.min(1 + (clickCount * 0.15), 1.8)}) translate(1px, 1px) rotate(0deg); 
+    
+    const theme = params.get('theme');
+    if (theme && ['pink', 'blue', 'green', 'sunset'].includes(theme)) {
+        changeTheme(theme);
     }
 }
 
-@keyframes finalYesScale {
-    0% { transform: scale(1); }
-    60% { transform: scale(2.4); }
-    100% { transform: scale(2.2); }
+function updateQuestionText(name) {
+    const questionText = elements.mainQuestion.querySelector('.question-text');
+    questionText.innerHTML = `${name},<br>你愿意成为我的恋人吗?`;
 }
-`;
 
-const styleSheet = document.createElement("style");
-styleSheet.textContent = newStyles;
-document.head.appendChild(styleSheet);
+function updateMusicSource(musicId) {
+    elements.bgMusic.src = `https://api.injahow.cn/meting/?type=url&id=${musicId}`;
+}
 
-function initSettings() {
-    const settingsBtn = document.createElement('div');
-    settingsBtn.className = 'settings-btn';
-    settingsBtn.innerHTML = '<i class="fas fa-cog"></i>';
-    document.body.appendChild(settingsBtn);
-
-    const settingsPanel = document.createElement('div');
-    settingsPanel.className = 'settings-panel';
-    settingsPanel.innerHTML = `
-        <div class="settings-content">
-            <h3>💝 定制你的表白</h3>
-            <div class="settings-item">
-                <label>赠与人：</label>
-                <input type="text" id="recipientName" placeholder="输入对方的名字" maxlength="10">
-            </div>
-            <div class="settings-item">
-                <label>背景音乐：</label>
-                <div class="music-input-group">
-                    <input type="text" id="musicId" placeholder="输入网易云音乐ID" maxlength="20">
-                    <div class="music-tip-text">
-                        仅支持网易云音乐，<a href="./setmusic.html" target="_blank">如何获取音乐ID？</a>
-                    </div>
-                </div>
-            </div>
-            <div class="settings-item">
-                <button id="generateLink" class="generate-btn">生成专属链接</button>
-            </div>
-            <div class="settings-item link-result" style="display: none;">
-                <p>你的专属链接：</p>
-                <div class="link-box">
-                    <input type="text" id="generatedLink" readonly>
-                    <button id="copyLink" class="copy-btn">复制</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(settingsPanel);
-
-    let isSettingsOpen = false;
-    settingsBtn.addEventListener('click', () => {
-        isSettingsOpen = !isSettingsOpen;
-        settingsBtn.classList.toggle('active', isSettingsOpen);
-        settingsPanel.classList.toggle('show', isSettingsOpen);
+function initEventListeners() {
+    elements.btnYes.addEventListener('click', handleYesClick);
+    
+    elements.btnNo.addEventListener('click', handleNoClick);
+    elements.btnNo.addEventListener('mouseenter', handleNoHover);
+    
+    elements.musicToggle.addEventListener('click', toggleMusic);
+    
+    elements.settingsToggle.addEventListener('click', toggleSettings);
+    elements.settingsClose.addEventListener('click', closeSettings);
+    
+    elements.settingsPanel.addEventListener('click', (e) => {
+        if (e.target === elements.settingsPanel) {
+            closeSettings();
+        }
     });
+    
+    elements.btnGenerate.addEventListener('click', generateLink);
+    elements.btnCopy.addEventListener('click', copyLink);
+    
+    elements.btnCelebrate.addEventListener('click', celebrate);
+    
+    document.querySelectorAll('.color-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const theme = btn.dataset.theme;
+            changeTheme(theme);
+            
+            btn.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                btn.style.transform = 'scale(1)';
+            }, 100);
+        });
+    });
+}
 
-    const generateBtn = document.getElementById('generateLink');
-    const linkResult = document.querySelector('.link-result');
-    const linkInput = document.getElementById('generatedLink');
-    const copyBtn = document.getElementById('copyLink');
-    const recipientInput = document.getElementById('recipientName');
-    const musicInput = document.getElementById('musicId');
+function handleYesClick() {
+    elements.btnYes.style.transform = 'scale(1.3)';
+    
+    updateCharacterExpression('love');
+    
+    createHeartBurst();
+    
+    createMultipleFireworks();
+    
+    setTimeout(() => {
+        showSuccessScene();
+    }, 800);
+}
 
-    generateBtn.addEventListener('click', () => {
-        const recipient = recipientInput.value.trim();
-        const musicId = musicInput.value.trim();
+function handleNoClick() {
+    clickCount++;
+    
+    updateNoButton();
+    
+    updateCharacterExpression(getExpressionByClickCount());
+    
+    updateHintText();
+    
+    createRefuseEffect();
+    
+    growYesButton();
+    
+    shakeScreen();
+}
+
+function handleNoHover(e) {
+    if (clickCount > 5) {
+        makeButtonEscape(elements.btnNo, e);
+    }
+}
+
+function updateNoButton() {
+    const message = config.messages.refuse[Math.min(clickCount - 1, config.messages.refuse.length - 1)];
+    elements.btnNo.innerHTML = `<span class="btn-content">${message}</span>`;
+    
+    if (clickCount <= 3) {
+        moveButtonRandomly(elements.btnNo);
+    } else if (clickCount <= 5) {
+        const currentTransform = elements.btnNo.style.transform || '';
+        const translateMatch = currentTransform.match(/translate\(([^)]+)\)/);
+        const translatePart = translateMatch ? `translate(${translateMatch[1]})` : '';
         
-        if (!recipient) {
-            alert('请输入赠与人名字');
+        const scale = Math.max(0.6, 1 - clickCount * 0.08);
+        elements.btnNo.style.transform = `${translatePart} scale(${scale})`;
+    }
+}
+
+function moveButtonRandomly(button) {
+    const isMobile = window.innerWidth <= 768;
+    const maxMove = isMobile ? 60 : 120;
+    
+    const rect = button.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let x, y;
+    let attempts = 0;
+    do {
+        x = (Math.random() - 0.5) * maxMove * 2;
+        y = (Math.random() - 0.5) * maxMove * 2;
+        attempts++;
+    } while (
+        attempts < 10 && (
+            rect.left + x < 20 || 
+            rect.right + x > viewportWidth - 20 ||
+            rect.top + y < 100 ||
+            rect.bottom + y > viewportHeight - 100
+        )
+    );
+    
+    const currentTransform = button.style.transform || '';
+    const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
+    const currentScale = scaleMatch ? scaleMatch[1] : '1';
+    
+    button.style.transform = `translate(${x}px, ${y}px) scale(${currentScale})`;
+    button.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+}
+
+function makeButtonEscape(button, e) {
+    const isMobile = window.innerWidth <= 768;
+    const distance = isMobile ? 120 : 200;
+    
+    const rect = button.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+    
+    let escapeX = Math.cos(angle + Math.PI) * distance;
+    let escapeY = Math.sin(angle + Math.PI) * distance;
+    
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const newLeft = rect.left + escapeX;
+    const newTop = rect.top + escapeY;
+    
+    if (newLeft < 20) escapeX = 20 - rect.left;
+    if (newLeft + rect.width > viewportWidth - 20) escapeX = viewportWidth - 20 - rect.left - rect.width;
+    if (newTop < 100) escapeY = 100 - rect.top;
+    if (newTop + rect.height > viewportHeight - 100) escapeY = viewportHeight - 100 - rect.top - rect.height;
+    
+    button.style.transform = `translate(${escapeX}px, ${escapeY}px) scale(0.7)`;
+    button.style.transition = 'transform 0.2s ease-out';
+}
+
+function growYesButton() {
+    const scale = Math.min(1 + clickCount * 0.12, 2);
+    elements.btnYes.style.transform = `scale(${scale})`;
+    elements.btnYes.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    
+    if (clickCount > 2) {
+        elements.btnYes.style.animation = 'pulse 1s ease-in-out infinite';
+    }
+}
+
+function shakeScreen() {
+    document.body.style.animation = 'shake 0.5s ease-in-out';
+    setTimeout(() => {
+        document.body.style.animation = '';
+    }, 500);
+}
+
+function updateCharacterExpression(expression) {
+    const character = elements.character;
+    const characterImage = elements.characterImage;
+    
+    const imagePath = config.characterImages[expression];
+    
+    if (imagePath && characterImage) {
+        characterImage.src = imagePath;
+        
+        character.style.animation = 'none';
+        setTimeout(() => {
+            character.style.animation = 'bounce 0.6s ease-out';
+        }, 10);
+    }
+}
+
+function getExpressionByClickCount() {
+    if (clickCount === 1) return 'shocked';
+    if (clickCount === 2) return 'think';
+    if (clickCount === 3) return 'crying';
+    if (clickCount >= 4) return 'angry';
+    return 'happy';
+}
+
+function updateHintText() {
+    const hint = config.messages.hints[Math.min(clickCount - 1, config.messages.hints.length - 1)];
+    elements.hintText.innerHTML = `<p>${hint}</p>`;
+    
+    elements.hintText.style.animation = 'none';
+    setTimeout(() => {
+        elements.hintText.style.animation = 'bounceIn 0.6s ease-out';
+    }, 10);
+}
+
+function showSuccessScene() {
+    elements.mainContainer.style.opacity = '0';
+    elements.mainContainer.style.transform = 'scale(0.9)';
+    
+    setTimeout(() => {
+        elements.mainContainer.style.display = 'none';
+        
+        elements.successScene.classList.add('show');
+        
+        generateLoveMessages();
+        
+        createCelebrationEffects();
+    }, 300);
+}
+
+function generateLoveMessages() {
+    elements.loveMessages.innerHTML = '';
+    
+    config.messages.success.forEach((msg, index) => {
+        setTimeout(() => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'love-message';
+            messageDiv.textContent = msg;
+            messageDiv.style.animationDelay = `${index * 0.15}s`;
+            elements.loveMessages.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.transform = 'scale(1.05)';
+                setTimeout(() => {
+                    messageDiv.style.transform = 'scale(1)';
+                }, 200);
+            }, 50);
+        }, index * 200);
+    });
+}
+
+function createHeartBurst() {
+    const colors = ['#ff6b8b', '#ff8da1', '#ffb6c1', '#ff69b4', '#ff1493'];
+    const count = 40;
+    
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            const heart = document.createElement('div');
+            heart.innerHTML = '❤';
+            heart.style.position = 'fixed';
+            heart.style.left = '50%';
+            heart.style.top = '50%';
+            heart.style.transform = 'translate(-50%, -50%)';
+            heart.style.fontSize = Math.random() * 25 + 15 + 'px';
+            heart.style.color = colors[Math.floor(Math.random() * colors.length)];
+            heart.style.zIndex = '9999';
+            heart.style.pointerEvents = 'none';
+            
+            const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.5;
+            const velocity = Math.random() * 350 + 250;
+            const duration = Math.random() * 1.2 + 1;
+            const rotation = Math.random() * 720 - 360;
+            
+            document.body.appendChild(heart);
+            
+            heart.animate([
+                {
+                    transform: 'translate(-50%, -50%) scale(0) rotate(0deg)',
+                    opacity: 1
+                },
+                {
+                    transform: `translate(calc(-50% + ${Math.cos(angle) * velocity}px), calc(-50% + ${Math.sin(angle) * velocity}px)) scale(1.2) rotate(${rotation}deg)`,
+                    opacity: 0.8,
+                    offset: 0.7
+                },
+                {
+                    transform: `translate(calc(-50% + ${Math.cos(angle) * velocity * 1.3}px), calc(-50% + ${Math.sin(angle) * velocity * 1.3}px)) scale(0.5) rotate(${rotation * 1.5}deg)`,
+                    opacity: 0
+                }
+            ], {
+                duration: duration * 1000,
+                easing: 'cubic-bezier(0, 0.5, 1, 1)'
+            }).onfinish = () => heart.remove();
+        }, i * 20);
+    }
+}
+
+function createRefuseEffect() {
+    const emojis = ['💔', '😢', '😭', '🥺'];
+    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+    
+    const effect = document.createElement('div');
+    effect.innerHTML = emoji;
+    effect.style.position = 'fixed';
+    effect.style.left = elements.btnNo.getBoundingClientRect().left + elements.btnNo.offsetWidth / 2 + 'px';
+    effect.style.top = elements.btnNo.getBoundingClientRect().top + 'px';
+    effect.style.fontSize = '2.5rem';
+    effect.style.zIndex = '9999';
+    effect.style.pointerEvents = 'none';
+    effect.style.transform = 'translate(-50%, -50%)';
+    
+    document.body.appendChild(effect);
+    
+    effect.animate([
+        { 
+            transform: 'translate(-50%, -50%) scale(0) rotate(0deg)', 
+            opacity: 1 
+        },
+        { 
+            transform: 'translate(-50%, -80px) scale(1.5) rotate(15deg)', 
+            opacity: 0.5,
+            offset: 0.5
+        },
+        { 
+            transform: 'translate(-50%, -120px) scale(0.5) rotate(-15deg)', 
+            opacity: 0 
+        }
+    ], {
+        duration: 1200,
+        easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+    }).onfinish = () => effect.remove();
+}
+
+function createCelebrationEffects() {
+    setTimeout(() => createConfetti(), 100);
+    setTimeout(() => createConfetti(), 400);
+    setTimeout(() => createConfetti(), 700);
+    
+    setTimeout(() => createMultipleFireworks(), 200);
+    
+    createBubbles();
+    
+    createTwinkleStars();
+}
+
+function createConfetti() {
+    const colors = ['#ff6b8b', '#ffa5a5', '#ff69b4', '#ff1493', '#ffb6c1', '#ffd700', '#ff8c00'];
+    const count = 60;
+    
+    for (let i = 0; i < count; i++) {
+        const confetti = document.createElement('div');
+        confetti.style.position = 'fixed';
+        confetti.style.width = Math.random() * 12 + 6 + 'px';
+        confetti.style.height = Math.random() * 12 + 6 + 'px';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.top = '-20px';
+        confetti.style.zIndex = '9999';
+        confetti.style.pointerEvents = 'none';
+        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+        
+        document.body.appendChild(confetti);
+        
+        const duration = Math.random() * 3000 + 2500;
+        const rotation = Math.random() * 1080 - 540;
+        const sway = (Math.random() - 0.5) * 200;
+        
+        confetti.animate([
+            { 
+                transform: 'translateY(0) translateX(0) rotate(0deg)', 
+                opacity: 1 
+            },
+            { 
+                transform: `translateY(50vh) translateX(${sway / 2}px) rotate(${rotation / 2}deg)`, 
+                opacity: 1,
+                offset: 0.5
+            },
+            { 
+                transform: `translateY(100vh) translateX(${sway}px) rotate(${rotation}deg)`, 
+                opacity: 0 
+            }
+        ], {
+            duration: duration,
+            delay: Math.random() * 1000,
+            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+        }).onfinish = () => confetti.remove();
+    }
+}
+
+function createMultipleFireworks() {
+    const positions = [
+        { x: '20%', y: '30%' },
+        { x: '50%', y: '25%' },
+        { x: '80%', y: '35%' },
+        { x: '35%', y: '45%' },
+        { x: '65%', y: '40%' }
+    ];
+    
+    positions.forEach((pos, index) => {
+        setTimeout(() => {
+            createFirework(pos.x, pos.y);
+        }, index * 300);
+    });
+}
+
+function createFirework(xPos, yPos) {
+    const colors = ['#ff6b8b', '#ff8da1', '#ffb6c1', '#ffd700', '#ff69b4'];
+    const particles = 40;
+    const centerX = window.innerWidth * parseFloat(xPos) / 100;
+    const centerY = window.innerHeight * parseFloat(yPos) / 100;
+    
+    for (let i = 0; i < particles; i++) {
+        const particle = document.createElement('div');
+        particle.style.position = 'fixed';
+        particle.style.width = '6px';
+        particle.style.height = '6px';
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.left = centerX + 'px';
+        particle.style.top = centerY + 'px';
+        particle.style.borderRadius = '50%';
+        particle.style.zIndex = '9999';
+        particle.style.pointerEvents = 'none';
+        particle.style.boxShadow = '0 0 10px currentColor';
+        
+        document.body.appendChild(particle);
+        
+        const angle = (Math.PI * 2 / particles) * i;
+        const velocity = Math.random() * 120 + 80;
+        const duration = Math.random() * 800 + 800;
+        
+        particle.animate([
+            { 
+                transform: 'translate(-50%, -50%) scale(0)', 
+                opacity: 1 
+            },
+            { 
+                transform: `translate(calc(-50% + ${Math.cos(angle) * velocity}px), calc(-50% + ${Math.sin(angle) * velocity}px)) scale(1)`, 
+                opacity: 1,
+                offset: 0.3
+            },
+            { 
+                transform: `translate(calc(-50% + ${Math.cos(angle) * velocity * 1.5}px), calc(-50% + ${Math.sin(angle) * velocity * 1.5 + 50}px)) scale(0.5)`, 
+                opacity: 0 
+            }
+        ], {
+            duration: duration,
+            easing: 'cubic-bezier(0, 0.5, 1, 1)'
+        }).onfinish = () => particle.remove();
+    }
+}
+
+function createBubbles() {
+    const interval = setInterval(() => {
+        if (!elements.successScene.classList.contains('show')) {
+            clearInterval(interval);
             return;
         }
-
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('to', encodeURIComponent(recipient));
-        if (musicId) {
-            currentUrl.searchParams.set('music', musicId);
-        }
-        linkInput.value = currentUrl.href;
-        linkResult.style.display = 'block';
-    });
-
-    copyBtn.addEventListener('click', () => {
-        linkInput.select();
-        document.execCommand('copy');
-        copyBtn.textContent = '已复制!';
-        setTimeout(() => {
-            copyBtn.textContent = '复制';
-        }, 2000);
-    });
-
-    function updateTitle() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const recipient = urlParams.get('to');
-        if (recipient) {
-            const decodedName = decodeURIComponent(recipient);
-            questionText.innerHTML = `${decodedName}，<br>可以成为我的恋人吗？`;
-            recipientInput.value = decodedName;
-        }
-    }
-
-    function updateMusicSource() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const musicId = urlParams.get('music');
-        const musicInput = document.getElementById('musicId');
         
-        if (musicId) {
-            musicInput.value = musicId;
-            bgMusic.src = `https://api.injahow.cn/meting/?type=url&id=${musicId}`;
-        }
-    }
-
-    updateMusicSource();
-    updateTitle();
+        const bubble = document.createElement('div');
+        bubble.style.position = 'fixed';
+        const size = Math.random() * 40 + 20;
+        bubble.style.width = size + 'px';
+        bubble.style.height = size + 'px';
+        bubble.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+        bubble.style.border = '2px solid rgba(255, 255, 255, 0.4)';
+        bubble.style.borderRadius = '50%';
+        bubble.style.left = Math.random() * 100 + '%';
+        bubble.style.bottom = '-60px';
+        bubble.style.zIndex = '9998';
+        bubble.style.pointerEvents = 'none';
+        
+        document.body.appendChild(bubble);
+        
+        const duration = Math.random() * 4000 + 4000;
+        const sway = (Math.random() - 0.5) * 100;
+        
+        bubble.animate([
+            { 
+                transform: 'translateY(0) translateX(0) scale(0)', 
+                opacity: 0 
+            },
+            { 
+                transform: 'translateY(-20vh) translateX(0) scale(1)', 
+                opacity: 0.6,
+                offset: 0.1
+            },
+            { 
+                transform: `translateY(-60vh) translateX(${sway / 2}px) scale(1)`, 
+                opacity: 0.6,
+                offset: 0.6
+            },
+            { 
+                transform: `translateY(-110vh) translateX(${sway}px) scale(0.8)`, 
+                opacity: 0 
+            }
+        ], {
+            duration: duration,
+            easing: 'linear'
+        }).onfinish = () => bubble.remove();
+    }, 600);
 }
 
-function initRomanticBackground() {
-    const bg = document.createElement('div');
-    bg.className = 'romantic-bg';
-    document.body.appendChild(bg);
-
-    const hearts = document.createElement('div');
-    hearts.className = 'floating-hearts';
-    bg.appendChild(hearts);
-
-    const spots = document.createElement('div');
-    spots.className = 'light-spots';
-    bg.appendChild(spots);
-
-    const stars = document.createElement('div');
-    stars.className = 'twinkling-stars';
-    bg.appendChild(stars);
-
-    function createDecorations() {
-        const isMobile = window.innerWidth <= 768;
-        const heartCount = isMobile ? 8 : 20;
-        const spotCount = isMobile ? 4 : 8;
-        const starCount = isMobile ? 20 : 50;
-        
-        for(let i = 0; i < heartCount; i++) {
-            const heart = document.createElement('div');
-            heart.className = 'floating-heart';
-            heart.innerHTML = '❤';
-            heart.style.left = `${Math.random() * 100}%`;
-            heart.style.setProperty('--duration', `${6 + Math.random() * 4}s`);
-            heart.style.setProperty('--moveX', `${-50 + Math.random() * 100}px`);
-            heart.style.setProperty('--rotate', `${Math.random() * 360}deg`);
-            heart.style.animationDelay = `${Math.random() * 5}s`;
-            hearts.appendChild(heart);
-        }
-
-        for(let i = 0; i < spotCount; i++) {
-            const spot = document.createElement('div');
-            spot.className = 'light-spot';
-            spot.style.left = `${Math.random() * 100}%`;
-            spot.style.top = `${Math.random() * 100}%`;
-            spot.style.setProperty('--moveX', `${-30 + Math.random() * 60}px`);
-            spot.style.setProperty('--moveY', `${-30 + Math.random() * 60}px`);
-            spots.appendChild(spot);
-        }
-
-        for(let i = 0; i < starCount; i++) {
+function createTwinkleStars() {
+    const stars = 30;
+    
+    for (let i = 0; i < stars; i++) {
+        setTimeout(() => {
             const star = document.createElement('div');
-            star.className = 'star';
-            star.style.left = `${Math.random() * 100}%`;
-            star.style.top = `${Math.random() * 100}%`;
-            stars.appendChild(star);
-        }
+            star.innerHTML = '✨';
+            star.style.position = 'fixed';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.fontSize = Math.random() * 20 + 15 + 'px';
+            star.style.zIndex = '9999';
+            star.style.pointerEvents = 'none';
+            
+            document.body.appendChild(star);
+            
+            star.animate([
+                { 
+                    transform: 'scale(0) rotate(0deg)', 
+                    opacity: 0 
+                },
+                { 
+                    transform: 'scale(1.2) rotate(180deg)', 
+                    opacity: 1,
+                    offset: 0.5
+                },
+                { 
+                    transform: 'scale(0) rotate(360deg)', 
+                    opacity: 0 
+                }
+            ], {
+                duration: 2000,
+                delay: Math.random() * 1000,
+                easing: 'ease-in-out'
+            }).onfinish = () => star.remove();
+        }, i * 100);
     }
+}
 
-    createDecorations();
+function createRandomDecorations() {
+    setInterval(() => {
+        const decorations = ['✨', '⭐', '💫', '🌟'];
+        const decoration = document.createElement('div');
+        decoration.innerHTML = decorations[Math.floor(Math.random() * decorations.length)];
+        decoration.style.position = 'fixed';
+        decoration.style.left = Math.random() * 100 + '%';
+        decoration.style.top = '-50px';
+        decoration.style.fontSize = Math.random() * 20 + 15 + 'px';
+        decoration.style.zIndex = '5';
+        decoration.style.pointerEvents = 'none';
+        decoration.style.opacity = '0.4';
+        
+        document.body.appendChild(decoration);
+        
+        const duration = Math.random() * 10000 + 8000;
+        const sway = (Math.random() - 0.5) * 200;
+        
+        decoration.animate([
+            { 
+                transform: `translateY(0) translateX(0) rotate(0deg)`, 
+                opacity: 0 
+            },
+            { 
+                transform: `translateY(30vh) translateX(${sway / 3}px) rotate(120deg)`, 
+                opacity: 0.4,
+                offset: 0.2
+            },
+            { 
+                transform: `translateY(70vh) translateX(${sway * 2 / 3}px) rotate(240deg)`, 
+                opacity: 0.4,
+                offset: 0.7
+            },
+            { 
+                transform: `translateY(110vh) translateX(${sway}px) rotate(360deg)`, 
+                opacity: 0 
+            }
+        ], {
+            duration: duration,
+            easing: 'linear'
+        }).onfinish = () => decoration.remove();
+    }, 3000);
+}
 
-    let resizeTimeout;
+function toggleMusic() {
+    if (isPlaying) {
+        elements.bgMusic.pause();
+        elements.musicToggle.classList.remove('playing');
+        elements.character.classList.remove('music-playing');
+        stopAudioVisualization();
+        isPlaying = false;
+        console.log('音乐已暂停');
+    } else {
+        if (!audioContext) {
+            setupAudioVisualization();
+        }
+        
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume().then(() => {
+                console.log('音频上下文已恢复');
+            });
+        }
+        
+        elements.bgMusic.play().then(() => {
+            elements.musicToggle.classList.add('playing');
+            elements.character.classList.add('music-playing');
+            isPlaying = true;
+            startAudioVisualization();
+            console.log('音乐开始播放，可视化已启动');
+        }).catch(err => {
+            console.error('播放失败:', err);
+            showMusicTip();
+            isPlaying = false;
+        });
+    }
+}
+
+
+
+function startAudioVisualization() {
+    if (!analyser || !dataArray) {
+        console.error('分析器未初始化');
+        return;
+    }
+    
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+    }
+    
+    visualizeAudio();
+}
+
+
+function setupAudioVisualization() {
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('音频上下文创建成功');
+        
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.7;
+        analyser.minDecibels = -90;
+        analyser.maxDecibels = -10;
+        
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        
+        if (!audioSource) {
+            audioSource = audioContext.createMediaElementSource(elements.bgMusic);
+            audioSource.connect(analyser);
+            analyser.connect(audioContext.destination);
+            console.log('音频源连接成功');
+        }
+        
+    } catch (error) {
+        console.error('音频可视化初始化失败:', error);
+    }
+}
+
+function visualizeAudio() {
+    if (!analyser || !isPlaying) {
+        return;
+    }
+    
+    analyser.getByteFrequencyData(dataArray);
+    const bars = document.querySelectorAll('.visualizer-bar');
+    
+    if (bars.length === 0) {
+        animationId = requestAnimationFrame(visualizeAudio);
+        return;
+    }
+    
+    const barCount = bars.length;
+    const dataStep = Math.floor(dataArray.length / barCount);
+    
+    const isMobile = window.innerWidth <= 768;
+    const isSmallMobile = window.innerWidth <= 480;
+    
+    let minHeight, maxHeight;
+    if (isSmallMobile) {
+        minHeight = 8;
+        maxHeight = 60;
+    } else if (isMobile) {
+        minHeight = 10;
+        maxHeight = 80;
+    } else {
+        minHeight = 12;
+        maxHeight = 100;
+    }
+    
+    bars.forEach((bar, index) => {
+        const startIdx = index * dataStep;
+        const endIdx = Math.min(startIdx + dataStep, dataArray.length);
+        
+        let sum = 0;
+        let count = 0;
+        
+        for (let i = startIdx; i < endIdx; i++) {
+            sum += dataArray[i];
+            count++;
+        }
+        
+        const average = count > 0 ? sum / count : 0;
+        
+        let finalValue = average;
+        if (index < 4) {
+            finalValue = Math.min(average * 1.5, 255);
+        }
+        
+        const normalized = finalValue / 255;
+        
+        const enhanced = Math.pow(normalized, 0.6);
+        
+        const height = minHeight + enhanced * (maxHeight - minHeight);
+        const finalHeight = Math.max(minHeight, Math.min(maxHeight, height));
+        
+        bar.style.height = finalHeight + 'px';
+        bar.style.opacity = 0.5 + enhanced * 0.5;
+        bar.style.filter = `drop-shadow(0 0 ${4 + enhanced * 15}px currentColor)`;
+    });
+    
+    animationId = requestAnimationFrame(visualizeAudio);
+}
+
+
+function stopAudioVisualization() {
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
+    
+    const bars = document.querySelectorAll('.visualizer-bar');
+    const isMobile = window.innerWidth <= 768;
+    const isSmallMobile = window.innerWidth <= 480;
+    
+    const defaultHeight = isSmallMobile ? 15 : (isMobile ? 20 : 25);
+    
+    bars.forEach(bar => {
+        bar.style.height = defaultHeight + 'px';
+        bar.style.opacity = '0.6';
+        bar.style.filter = 'drop-shadow(0 0 4px currentColor)';
+    });
+}
+
+function showMusicTip() {
+    const tip = document.querySelector('.music-tip');
+    if (!tip) return;
+    
+    tip.classList.add('show');
+    
+    setTimeout(() => {
+        tip.classList.remove('show');
+    }, 3000);
+}
+
+function toggleSettings() {
+    elements.settingsPanel.classList.toggle('show');
+    elements.settingsToggle.classList.toggle('active');
+}
+
+function closeSettings() {
+    elements.settingsPanel.classList.remove('show');
+    elements.settingsToggle.classList.remove('active');
+}
+
+function generateLink() {
+    const name = elements.recipientName.value.trim();
+    const musicId = elements.musicId.value.trim();
+    
+    if (!name) {
+        alert('请输入表白对象的名字!');
+        return;
+    }
+    
+    const url = new URL(window.location.href);
+    url.searchParams.set('to', encodeURIComponent(name));
+    
+    if (musicId) {
+        url.searchParams.set('music', musicId);
+    }
+    
+    url.searchParams.set('theme', currentTheme);
+    
+    elements.generatedLink.value = url.toString();
+    elements.linkResult.classList.add('show');
+}
+
+function copyLink() {
+    elements.generatedLink.select();
+    document.execCommand('copy');
+    
+    const originalHTML = elements.btnCopy.innerHTML;
+    elements.btnCopy.innerHTML = '<i class="fas fa-check"></i>';
+    elements.btnCopy.style.background = '#10b981';
+    elements.btnCopy.style.color = '#fff';
+    
+    setTimeout(() => {
+        elements.btnCopy.innerHTML = originalHTML;
+        elements.btnCopy.style.background = '';
+        elements.btnCopy.style.color = '';
+    }, 2000);
+}
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'pink';
+    changeTheme(savedTheme);
+}
+
+function changeTheme(theme) {
+    currentTheme = theme;
+    
+    document.body.classList.remove('theme-pink', 'theme-blue', 'theme-green', 'theme-sunset');
+    
+    document.body.classList.add(`theme-${theme}`);
+    
+    localStorage.setItem('theme', theme);
+    
+    document.querySelectorAll('.color-option').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.theme === theme) {
+            btn.classList.add('active');
+        }
+    });
+    
+    document.body.style.transition = 'all 0.5s ease';
+    
+    console.log('主题已切换到:', theme);
+}
+
+function celebrate() {
+    createHeartBurst();
+    createConfetti();
+    createMultipleFireworks();
+    createTwinkleStars();
+}
+
+function initCanvas() {
+    const canvas = document.getElementById('heartCanvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
     window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            hearts.innerHTML = '';
-            spots.innerHTML = '';
-            stars.innerHTML = '';
-            createDecorations();
-        }, 250);
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+    
+    for (let i = 0; i < 25; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 25 + 12,
+            speedX: (Math.random() - 0.5) * 0.6,
+            speedY: (Math.random() - 0.5) * 0.6,
+            opacity: Math.random() * 0.3 + 0.1
+        });
+    }
+    
+    animateCanvas();
+}
+
+function animateCanvas() {
+    const canvas = document.getElementById('heartCanvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    particles.forEach(particle => {
+        particle.x += particle.speedX;
+        particle.y += particle.speedY;
+        
+        if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1;
+        if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1;
+        
+        ctx.save();
+        ctx.translate(particle.x, particle.y);
+        ctx.globalAlpha = particle.opacity;
+        ctx.fillStyle = '#ff6b8b';
+        ctx.font = particle.size + 'px sans-serif';
+        ctx.fillText('❤', 0, 0);
+        ctx.restore();
+    });
+    
+    requestAnimationFrame(animateCanvas);
+}
+
+function initAnimations() {
+    const elementsToAnimate = [
+        { element: elements.character, animation: 'bounceIn', delay: 0 },
+        { element: elements.mainQuestion, animation: 'slideInDown', delay: 200 },
+        { element: '.buttons-group', animation: 'slideInUp', delay: 400 },
+        { element: elements.hintText, animation: 'fadeIn', delay: 600 }
+    ];
+    
+    elementsToAnimate.forEach(item => {
+        setTimeout(() => {
+            const el = typeof item.element === 'string' 
+                ? document.querySelector(item.element) 
+                : item.element;
+            if (el) {
+                el.style.animation = `${item.animation} 0.8s ease-out`;
+            }
+        }, item.delay);
     });
 }
